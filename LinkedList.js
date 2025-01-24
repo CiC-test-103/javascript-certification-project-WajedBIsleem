@@ -1,5 +1,6 @@
 // Necessary Imports (you will need to use this)
 const { Student } = require('./Student')
+const fs = require("fs").promises
 
 /**
  * Node Class (GIVEN, you will need to use this)
@@ -37,6 +38,8 @@ class LinkedList {
    */
   constructor() {
     // TODO
+    this.head = this.tail = null;
+    this.length = 0;
   }
 
   /**
@@ -49,6 +52,14 @@ class LinkedList {
    */
   addStudent(newStudent) {
     // TODO
+    let node = new Node(newStudent);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail.next = node;
+      this.tail = node;
+    }
+    this.length++;
   }
 
   /**
@@ -61,6 +72,29 @@ class LinkedList {
    */
   removeStudent(email) {
     // TODO
+    if (this.length === 0)
+      return;
+
+    let current = this.head;
+    let previous = null;
+
+    while (current) {
+      if (current.data.getEmail() === email) {
+        if (current === this.head) {
+          this.head = this.head.next;
+          if (current === this.tail)
+            this.tail = null;
+        } else {
+          previous.next = current.next;
+          if (current === this.tail)
+            this.tail = previous;
+        }
+        this.length--;
+        return;
+      }
+      previous = current;
+      current = current.next;
+    }
   }
 
   /**
@@ -70,7 +104,14 @@ class LinkedList {
    */
   findStudent(email) {
     // TODO
-    return -1
+    let current = this.head;
+    while (current) {
+      if (current.data.getEmail() === email) {
+        return current.data;
+      }
+      current = current.next;
+    }
+    return -1;
   }
 
   /**
@@ -78,8 +119,10 @@ class LinkedList {
    * EFFECTS:   Clears all students from the Linked List
    * RETURNS:   None
    */
-  #clearStudents() {
+  clearStudents() {
     // TODO
+    this.head = this.tail = null;
+    this.length = 0;
   }
 
   /**
@@ -92,7 +135,13 @@ class LinkedList {
    */
   displayStudents() {
     // TODO
-    return "";
+    let output = "";
+    let current = this.head;
+    while (current) {
+      output += `${output ? ", " : ""}${current.data.getName()}`;
+      current = current.next;
+    }
+    return output;
   }
 
   /**
@@ -102,7 +151,13 @@ class LinkedList {
    */
   #sortStudentsByName() {
     // TODO
-    return [];
+    let students = [];
+    let current = this.head;
+    while (current) {
+      students.push(current.data);
+      current = current.next;
+    }
+    return students.sort((a, b) => a.getName().localeCompare(b.getName()));
   }
 
   /**
@@ -114,7 +169,7 @@ class LinkedList {
    */
   filterBySpecialization(specialization) {
     // TODO
-    return [];
+    return this.#sortStudentsByName().filter(student => student.getSpecialization() === specialization);
   }
 
   /**
@@ -124,9 +179,9 @@ class LinkedList {
    * CONSIDERATIONS:
    * - Use sortStudentsByName()
    */
-  filterByMinAge(minAge) {
+  filterByMinYear(minYear) {
     // TODO
-    return [];
+    return this.#sortStudentsByName().filter(student => student.getYear() >= minYear);
   }
 
   /**
@@ -136,6 +191,23 @@ class LinkedList {
    */
   async saveToJson(fileName) {
     // TODO
+    let students = [];
+    let current = this.head;
+    while (current) {
+      students.push({
+        name: current.data.getName(),
+        year: current.data.getYear(),
+        email: current.data.getEmail(),
+        specialization: current.data.getSpecialization()
+      });
+      current = current.next;
+    }
+
+    try {
+      await fs.writeFile(fileName, JSON.stringify(students), "utf8");
+    } catch (err) {
+      throw err;
+    }
   }
 
   /**
@@ -147,8 +219,17 @@ class LinkedList {
    */
   async loadFromJSON(fileName) {
     // TODO
+    try {
+      const data = await fs.readFile(fileName, "utf8");
+      const students = JSON.parse(data);
+      this.clearStudents();
+      students.forEach((student) => {
+        this.addStudent(new Student(student.name, student.year, student.email, student.specialization));
+      });
+    } catch (err) {
+      throw err;
+    }
   }
-
 }
 
 module.exports = { LinkedList }
